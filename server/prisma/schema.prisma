@@ -1,0 +1,220 @@
+// P1 schema: companies, users, masters, trips, expenses, audit.
+// Later phases (invoices, payments, salary, fuel, subscriptions) are added as new
+// models and new migrations without changing these core tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLATFORM_ADMIN
+  COMPANY_OWNER
+  MANAGER
+  ACCOUNTANT
+  DRIVER
+}
+
+enum TripStatus {
+  PLANNED
+  RUNNING
+  COMPLETED
+  CLOSED
+}
+
+enum ExpenseCategory {
+  DIESEL
+  TOLL
+  DRIVER_FOOD
+  LOADING
+  REPAIR
+  POLICE_RTO
+  MISC
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  gstNo     String?
+  address   String?
+  plan      String   @default("starter")
+  status    String   @default("active") // active | suspended
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  trucks   Truck[]
+  drivers  Driver[]
+  parties  Party[]
+  routes   Route[]
+  trips    Trip[]
+  expenses TripExpense[]
+  auditLogs AuditLog[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  companyId    String?
+  company      Company? @relation(fields: [companyId], references: [id])
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  driver Driver?
+}
+
+model Truck {
+  id            String    @id @default(cuid())
+  companyId     String
+  regNo         String
+  type          String
+  capacityTons  Decimal?
+  insuranceExp  DateTime?
+  permitExp     DateTime?
+  fitnessExp    DateTime?
+  pucExp        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  trips   Trip[]
+
+  @@unique([companyId, regNo])
+  @@index([companyId])
+}
+
+model Driver {
+  id         String    @id @default(cuid())
+  companyId  String
+  userId     String?   @unique // set when the driver gets portal access (Phase 4)
+  name       String
+  phone      String
+  licenceNo  String?
+  licenceExp DateTime?
+  salaryType String? // per_trip | monthly
+  baseSalary Decimal?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+  trips   Trip[]
+
+  @@index([companyId])
+}
+
+model Party {
+  id         String   @id @default(cuid())
+  companyId  String
+  name       String
+  gstNo      String?
+  phone      String?
+  address    String?
+  creditDays Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  trips   Trip[]
+
+  @@index([companyId])
+}
+
+model Route {
+  id         String  @id @default(cuid())
+  companyId  String
+  origin     String
+  destination String
+  distanceKm Decimal
+  notes      String?
+
+  company Company @relation(fields: [companyId], references: [id])
+  trips   Trip[]
+
+  @@unique([companyId, origin, destination])
+  @@index([companyId])
+}
+
+model Trip {
+  id            String     @id @default(cuid())
+  companyId     String
+  tripNo        String // per-company number series, e.g. T-00001
+  truckId       String
+  driverId      String
+  partyId       String
+  routeId       String?
+  startDate     DateTime
+  endDate       DateTime?
+  loadDesc      String?
+  freightAmount Decimal
+  status        TripStatus @default(PLANNED)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  company  Company       @relation(fields: [companyId], references: [id])
+  truck    Truck         @relation(fields: [truckId], references: [id])
+  driver   Driver        @relation(fields: [driverId], references: [id])
+  party    Party         @relation(fields: [partyId], references: [id])
+  route    Route?        @relation(fields: [routeId], references: [id])
+  expenses TripExpense[]
+
+  @@unique([companyId, tripNo])
+  @@index([companyId, status])
+  @@index([companyId, startDate])
+  @@index([routeId])
+}
+
+model TripExpense {
+  id             String          @id @default(cuid())
+  companyId      String
+  tripId         String
+  category       ExpenseCategory
+  amount         Decimal
+  currency       String          @default("INR")
+  fxRate         Decimal         @default(1)
+  date           DateTime
+  notes          String?
+  liters         Decimal? // diesel litres filled, used for mileage (km per litre)
+  billUrl        String?
+  approvalStatus ApprovalStatus  @default(APPROVED) // drivers submit PENDING
+  enteredById    String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  trip    Trip    @relation(fields: [tripId], references: [id])
+
+  @@index([companyId, tripId])
+  @@index([companyId, date])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+  entity    String
+  entityId  String
+  action    String // create | update | delete
+  oldValue  Json?
+  newValue  Json?
+  at        DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, entity, entityId])
+}

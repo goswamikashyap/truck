@@ -1,0 +1,8 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[prisma]": { "editor.defaultFormatter": "Prisma.prisma" },
+  "eslint.workingDirectories": [{ "directory": "server" }, { "directory": "client" }],
+  "typescript.tsdk": "server/node_modules/typescript/lib",
+  "files.exclude": { "**/node_modules": true, "**/dist": true }
+}

@@ -1,0 +1,129 @@
+### Install the "REST Client" extension, then click "Send Request" above any request.
+### Start the API first (npm run dev in server/). Run LOGIN first, then the others.
+
+@base = http://localhost:4000/api
+
+### 1. Login with the seeded demo owner (after: npm run seed)
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "owner@demo.in", "password": "password123" }
+
+###
+@token = {{login.response.body.accessToken}}
+
+### Who am I
+GET {{base}}/me
+Authorization: Bearer {{token}}
+
+### List trips
+GET {{base}}/trips
+Authorization: Bearer {{token}}
+
+### Add a truck
+POST {{base}}/trucks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "regNo": "MH04XY9999", "type": "Container", "capacityTons": 24 }
+
+### List trucks
+GET {{base}}/trucks
+Authorization: Bearer {{token}}
+
+### Add a party
+POST {{base}}/parties
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Bharat Cement", "creditDays": 45 }
+
+### Add a driver
+POST {{base}}/drivers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Suresh", "phone": "9000000001" }
+
+### Paste real ids from the lists above, then create a trip
+POST {{base}}/trips
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "truckId": "PASTE_TRUCK_ID",
+  "driverId": "PASTE_DRIVER_ID",
+  "partyId": "PASTE_PARTY_ID",
+  "startDate": "2026-10-27",
+  "freightAmount": 60000
+}
+
+### Add an expense to a trip (use a real trip id)
+POST {{base}}/trips/PASTE_TRIP_ID/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "category": "DIESEL", "amount": 15000, "date": "2026-10-27" }
+
+### Trip profit (owner or accountant only)
+GET {{base}}/trips/PASTE_TRIP_ID/profit
+Authorization: Bearer {{token}}
+
+### Move trip status: RUNNING -> COMPLETED -> CLOSED
+PATCH {{base}}/trips/PASTE_TRIP_ID/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "RUNNING" }
+
+### Edit a trip (not allowed once closed)
+PUT {{base}}/trips/PASTE_TRIP_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "freightAmount": 65000 }
+
+### Add a diesel expense with litres (mileage is worked out from this)
+POST {{base}}/trips/PASTE_TRIP_ID/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "category": "DIESEL", "amount": 15000, "liters": 165, "date": "2026-10-27" }
+
+### Expense in another currency needs its rate
+POST {{base}}/trips/PASTE_TRIP_ID/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "category": "TOLL", "amount": 40, "currency": "USD", "fxRate": 83.5, "date": "2026-10-27" }
+
+### Expense ledger across all trips (optional: from, to, category, status, tripId)
+GET {{base}}/expenses?from=2026-10-01&category=DIESEL
+Authorization: Bearer {{token}}
+
+### Delete an expense (not on a closed trip)
+DELETE {{base}}/expenses/PASTE_EXPENSE_ID
+Authorization: Bearer {{token}}
+
+### Dashboard numbers (days=0 means all time)
+GET {{base}}/dashboard?days=90
+Authorization: Bearer {{token}}
+
+### Route results: cost per km, mileage, margin, suggested freight
+GET {{base}}/routes/analytics
+Authorization: Bearer {{token}}
+
+### Add a route
+POST {{base}}/routes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "origin": "Mumbai", "destination": "Delhi", "distanceKm": 1400 }
+
+### Delete a truck / driver / party / route (409 if a trip uses it)
+DELETE {{base}}/trucks/PASTE_TRUCK_ID
+Authorization: Bearer {{token}}
+
+### Health check
+GET http://localhost:4000/health
