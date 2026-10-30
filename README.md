@@ -49,17 +49,27 @@ docker compose up -d db
 cd server
 cp .env.example .env          # then edit the two JWT secrets to any long random text
 npm install                   # also creates package-lock.json: commit it
+npm install-scripts approve --all
+npm install bcrypt@npm:bcryptjs
 npx prisma generate
 npx prisma migrate dev --name init   # creates the tables + a migrations folder: commit it
 npm run seed                  # demo data (31 trips). Logins, password password123:
                               #   owner@demo.in  manager@demo.in  accountant@demo.in  driver@demo.in
+
 npm run dev                   # http://localhost:4000/health
 
 # 4. web app (new terminal)
 cd client
 npm install                   # also creates package-lock.json: commit it
+npm install
+npm install-scripts approve --all
 npm run dev                   # http://localhost:5173
 ```
+#how to check data in db->
+1. Keep your app running. Open a new terminal tab in VS Code.
+2. cd server
+3. npx prisma studio
+4. In browser open new tab and search http://localhost:5555 
 
 In VS Code you can also press `Ctrl+Shift+P` > "Tasks: Run Task" > **dev: everything**.
 Press `F5` for the debugger on the API. Open `requests.http` and click "Send Request" to try the API.
@@ -139,3 +149,45 @@ The server container runs `prisma db push` on start. After you create migrations
 - Replace both JWT secrets and the demo password; never commit `.env`.
 - Run behind HTTPS, and keep daily database backups (and test a restore).
 - Add refresh-token revocation and email verification before opening public signup.
+
+# How to close the project.............................
+
+Step 1: Stop the Front-end and Back-end Servers->
+1. Go to your active terminal windows at the bottom of VS Code.
+2. Click inside the terminal panel where the backend or frontend is running.
+3. Press Ctrl + C on your keyboard.
+4. Repeat this for your other open terminals tab until all live codes stop looping
+
+
+Step 2: Shut Down the Docker Database->
+
+Even if you close VS Code, your PostgreSQL database will continue running in the background via Docker. To turn it off:
+1. In your terminal, make sure you are in the main project folder root (transport-saas). If you are still in a subfolder, type cd .. to go back.
+2. Run this command to stop and remove the active container safely: docker compose down
+3. Alternatively, you can open Docker Desktop and click the square Stop (Square Stop Icon) button next to the transport-saas container list.
+
+
+Step 3: Close the Project Folder
+• In the top-left menu of VS Code, click File > Close Folder (or simply close the VS Code window entirely).
+Your project is now safely closed.
+
+# NOW HOW TO RERUN THE PROJECT IF IT'S ALREADY COMPILED ONCE:
+
+Step 1: Turn on the Database
+1. Launch Docker Desktop on your computer and wait for the icon to turn green.
+2. Open your project folder in VS Code and open a new terminal (`Ctrl + ``).
+3. Start your database container by running BASH command : docker compose up -d db
+
+
+Step 2: Launch the Backend Server
+1. In your current terminal, navigate into the server folder: cd server
+2. Start the backend application: npm run dev
+
+
+Step 3: Launch the Frontend Interface
+1. Open a second terminal split tab (click the + icon on the right side of the terminal bar, or press `Ctrl + Shift + ``).
+2. Move into the client folder: cd client
+3. Start the interface: npm run dev
+
+Once the frontend terminal displays the blue link (http://localhost:5173), hold Ctrl and click it to open your operational dashboard in the browser! You can log in using owner@demo.in with the password password123
+
