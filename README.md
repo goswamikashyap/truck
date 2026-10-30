@@ -61,7 +61,6 @@ npm run dev                   # http://localhost:4000/health
 # 4. web app (new terminal)
 cd client
 npm install                   # also creates package-lock.json: commit it
-npm install
 npm install-scripts approve --all
 npm run dev                   # http://localhost:5173
 ```
